@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>薬剤師無双！〜その処方、ちょっと待った〜</title>
+<style>
+*{box-sizing:border-box;-webkit-user-select:none;user-select:none}
+body{margin:0;background:#111;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;overflow:hidden}
+#game{position:relative;width:100vw;height:100vh;max-width:900px;margin:auto;background:linear-gradient(#bde7ff 0 58%,#d7f2d0 58%);overflow:hidden}
+#hud{position:absolute;z-index:5;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;font-weight:800;text-shadow:1px 1px 2px #333}
+#world{position:absolute;inset:0}
+.hospital{position:absolute;bottom:0;left:0;width:100%;height:42%;background:repeating-linear-gradient(90deg,#f7f7f7 0 90px,#dfe6ea 90px 94px);border-top:8px solid #8ba2b0}
+.floor{position:absolute;bottom:0;width:100%;height:18%;background:#c8d2d7;border-top:4px solid #9baab0}
+.window{position:absolute;top:15%;width:90px;height:100px;background:#8ed4ee;border:10px solid #fff;box-shadow:0 4px 0 #8aa0aa}
+.window.w1{left:12%}.window.w2{left:72%}
+.door{position:absolute;bottom:18%;right:8%;width:90px;height:150px;background:#b68b64;border:7px solid #76563f}
+#player{position:absolute;z-index:3;bottom:18%;left:12%;font-size:54px;filter:drop-shadow(0 4px 1px #555)}
+.enemy{position:absolute;z-index:3;bottom:18%;font-size:48px;transition:left .15s}
+#boss{font-size:76px;display:none}
+#bubble{position:absolute;z-index:6;left:50%;top:16%;transform:translateX(-50%);width:min(88%,650px);background:#fff;color:#111;border:5px solid #222;border-radius:16px;padding:14px;box-shadow:0 8px 0 #555;display:none}
+#bubble h2{margin:0 0 8px;font-size:20px}
+#bubble p{margin:6px 0;line-height:1.5}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.choice{padding:12px 8px;border:3px solid #222;border-radius:10px;background:#ffe86b;font-size:16px;font-weight:800}
+.choice:active{transform:translateY(2px)}
+#message{position:absolute;z-index:7;left:50%;top:44%;transform:translate(-50%,-50%);font-size:28px;font-weight:900;text-align:center;text-shadow:2px 2px 0 #222;display:none;width:90%}
+#controls{position:absolute;z-index:8;bottom:20px;left:0;right:0;display:flex;justify-content:space-between;padding:0 18px;pointer-events:none}
+.pad{display:flex;gap:10px;pointer-events:auto}
+.btn{width:70px;height:60px;border-radius:18px;border:3px solid #222;background:#fff;color:#111;font-size:28px;font-weight:900;box-shadow:0 5px 0 #555;touch-action:manipulation;cursor:pointer}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #555}
+#start,#end{position:absolute;z-index:20;inset:0;background:rgba(0,0,0,.84);align-items:center;justify-content:center;text-align:center;padding:24px} #start{display:flex} #end{display:none}
+.card{max-width:680px;background:#fff;color:#111;border:6px solid #111;border-radius:22px;padding:24px;box-shadow:0 10px 0 #555}
+.card h1{font-size:30px;margin:0 0 12px}.card p{line-height:1.7}
+.big{display:inline-block;margin-top:12px;padding:14px 24px;background:#55d68b;border:4px solid #111;border-radius:14px;font-size:20px;font-weight:900}
+.small{font-size:12px;color:#555}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="hud"><span>❤️ <span id="hp">3</span></span><span>疑義照会：<span id="score">0</span></span></div>
+  <div id="world">
+    <div class="hospital"><div class="window w1"></div><div class="window w2"></div><div class="door"></div><div class="floor"></div></div>
+    <div id="player">🧑‍⚕️</div>
+    <div id="e1" class="enemy" style="left:48%">📄</div>
+    <div id="e2" class="enemy" style="left:78%">👹</div>
+    <div id="boss" class="enemy" style="left:72%">🧑‍⚕️</div>
+  </div>
+  <div id="bubble"></div>
+  <div id="message"></div>
+  <div id="controls">
+    <div class="pad"><button class="btn" id="left">←</button><button class="btn" id="right">→</button></div>
+    <div class="pad"><button class="btn" id="jump">↑</button><button class="btn" id="drug">💊</button></div>
+  </div>
+
+  <div id="start">
+    <div class="card">
+      <h1>💊 薬剤師無双！</h1>
+      <p><b>〜その処方、ちょっと待った〜</b></p>
+      <p>病棟を走り回り、ヤバそうな処方を薬学的知識で撃破せよ！</p>
+      <p>移動・ジャンプ・💊で攻撃。<br>処方問題が出たら、正しい確認事項を選ぼう。</p>
+      <div class="big" id="startBtn">病棟へ出勤する</div>
+      <p class="small">※ゲーム内の問題は試作版です。実臨床の判断には使用しないでください。</p>
+    </div>
+  </div>
+
+  <div id="end">
+    <div class="card">
+      <h1>🎉 STAGE CLEAR!</h1>
+      <p id="result"></p>
+      <div class="big" onclick="location.reload()">もう一度プレイ</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const player=document.getElementById('player'), hpEl=document.getElementById('hp'), scoreEl=document.getElementById('score');
+const bubble=document.getElementById('bubble'), msg=document.getElementById('message');
+let x=12,hp=3,score=0,running=false,jumping=false,questionIndex=0,activeQuestion=false,bossShown=false;
+const questions=[
+ {t:"処方箋が落ちてきた！",p:"72歳男性。eGFR 25 mL/min/1.73m²。腎排泄の割合が大きい薬剤が通常量で処方されています。まず確認したいのは？",c:["腎機能と用量","血液型","利き手","好きな食べ物"],a:0},
+ {t:"併用薬が増えた！",p:"新しく薬剤が追加されました。既存薬との相互作用を確認する場面です。まず行うことは？",c:["併用薬・患者背景を確認","薬を全部中止","患者の靴のサイズ確認","とりあえず倍量"],a:0},
+ {t:"低血糖モンスター！",p:"糖尿病治療中の患者。冷汗・振戦・動悸が出ています。まず疑うべきものは？",c:["低血糖","高カルシウム血症","脱水だけ","花粉症"],a:0}
+];
+function render(){player.style.left=x+"%";hpEl.textContent=hp;scoreEl.textContent=score}
+function move(d){if(!running||activeQuestion)return;x=Math.max(3,Math.min(88,x+d));render(); if(x>43&&questionIndex===0) ask(); if(x>62&&questionIndex===1) ask(); if(x>76&&questionIndex===2) ask();}
+function ask(){
+ if(activeQuestion||questionIndex>=questions.length)return;
+ activeQuestion=true; const q=questions[questionIndex];
+ bubble.innerHTML=`<h2>${q.t}</h2><p>${q.p}</p><div class="choices">${q.c.map((v,i)=>`<button class="choice" data-i="${i}">${v}</button>`).join("")}</div>`;
+ bubble.style.display="block";
+ bubble.querySelectorAll(".choice").forEach(b=>b.onclick=()=>answer(+b.dataset.i));
+}
+function answer(i){
+ const q=questions[questionIndex]; bubble.style.display="none"; activeQuestion=false;
+ if(i===q.a){score++; show("💥 疑義照会アタック！！",900)}
+ else{hp--; show("💥 なんでそこ確認した！？",1100); if(hp<=0)return gameOver();}
+ questionIndex++; render();
+ if(questionIndex>=3&&!bossShown){bossShown=true;setTimeout(()=>{document.getElementById('e1').style.display='none';document.getElementById('e2').style.display='none';document.getElementById('boss').style.display='block';show("👑 ボス「その処方、前回もこれで出してます」",1300)},400)}
+}
+function attack(){
+ if(!running||activeQuestion)return;
+ if(bossShown && x>60){ bossShown=false; setTimeout(()=>endGame(),500); show("🔥「患者背景と添付文書を確認します！」",1000); }
+ else show("💊 薬学的根拠ビーム！",500);
+}
+function jump(){if(!running||activeQuestion||jumping)return;jumping=true;player.style.transform="translateY(-90px)";setTimeout(()=>{player.style.transform="";jumping=false},420)}
+function show(t,ms){msg.textContent=t;msg.style.display="block";setTimeout(()=>msg.style.display="none",ms)}
+function gameOver(){running=false;document.getElementById('end').style.display='flex';document.querySelector('#end h1').textContent="💀 GAME OVER";document.getElementById('result').textContent="処方の確認以前に、体力が尽きました。疑義照会："+score+"件";}
+function endGame(){running=false;document.getElementById('end').style.display='flex';document.getElementById('result').innerHTML=`疑義照会：<b>${score}件</b><br>処方ミス回避：<b>${score===3?"全問成功！":"一部成功"}</b><br><br>医師「……確認します。」<br>薬剤師「ありがとうございます。」<br><br><b>本日の残業：＋2時間</b>`}
+document.getElementById('startBtn').onclick=()=>{document.getElementById('start').style.display='none';running=true;render();show("📢 本日の業務を開始します！",1000)}
+
+document.getElementById('left').ontouchstart=e=>{e.preventDefault();move(-4)};document.getElementById('right').ontouchstart=e=>{e.preventDefault();move(4)};
+document.getElementById('jump').ontouchstart=e=>{e.preventDefault();jump()};document.getElementById('drug').ontouchstart=e=>{e.preventDefault();attack()};
+document.getElementById('left').onmousedown=()=>move(-4);document.getElementById('right').onmousedown=()=>move(4);document.getElementById('jump').onmousedown=()=>jump();document.getElementById('drug').onmousedown=()=>attack();
+document.getElementById('end').style.display='none';\ndocument.addEventListener('keydown',e=>{if(e.key==="ArrowLeft")move(-4);if(e.key==="ArrowRight")move(4);if(e.key==="ArrowUp"||e.key===" ")jump();if(e.key==="z"||e.key==="x")attack()});
+</script>
+</body>
+</html>
